@@ -3,7 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>giftably · Google Sheets Integration</title>
+  <title>POINTZ · Earn Rewards</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="POINTZ" />
+  <link rel="manifest" href="/site.webmanifest" />
+  
   <style>
     :root {
       --bg-main: #050509;
@@ -941,7 +950,7 @@
   <div class="login-overlay" id="loginOverlay">
     <div class="login-container">
       <div class="login-logo">
-        <img src="https://i.postimg.cc/QCDzkYCF/Screenshot-2026-02-28-at-6-23-02-PM-removebg-preview.png" alt="giftably">
+        <img src="https://i.postimg.cc/QCDzkYCF/Screenshot-2026-02-28-at-6-23-02-PM-removebg-preview.png" alt="POINTZ">
       </div>
       <h2 class="login-title">Welcome Back</h2>
       <div class="login-form">
@@ -956,6 +965,9 @@
         <div class="error-message" id="loginError"></div>
         <button class="login-button" id="loginButton">Sign In</button>
       </div>
+      <div class="demo-credentials">
+        Demo: mattsm680 / demo123
+      </div>
     </div>
   </div>
 
@@ -964,7 +976,7 @@
     <!-- Navbar -->
     <header class="top-nav">
       <div class="nav-left">
-        <img class="logo-img" src="https://i.postimg.cc/QCDzkYCF/Screenshot-2026-02-28-at-6-23-02-PM-removebg-preview.png" alt="giftably">
+        <img class="logo-img" src="https://i.postimg.cc/QCDzkYCF/Screenshot-2026-02-28-at-6-23-02-PM-removebg-preview.png" alt="POINTZ">
         <nav class="nav-links" id="navLinks">
           <div class="nav-link active" data-section="earn">Earn</div>
           <div class="nav-link" data-section="withdraw">Withdraw</div>
@@ -1063,7 +1075,7 @@
           <h2 class="section-title">Withdraw</h2>
           <div class="section-desc">Minimum $0.50 · instant payouts to PayPal, crypto or gift cards.</div>
           <div class="feature-grid" id="withdrawFeatures"></div>
-          <div style="margin-top:20px;"><span class="action-pill" onclick="showWithdrawModal()">→ request payout</span></div>
+          <div style="margin-top:20px;"><span class="action-pill" onclick="alert('Withdrawal feature coming soon!')">→ request payout</span></div>
         </div>
       </section>
       <section class="section-card" id="promocode" data-section-content="promocode">
@@ -1126,7 +1138,7 @@
           Loading instructions...
         </div>
         <div style="text-align: center; margin: 16px 0;">
-          <a href="#" id="websiteLink" class="website-link" target="_blank" onclick="openWebsite()">🔗 Click Here to Visit Website</a>
+          <a href="#" id="taskUrlLink" class="website-link" target="_blank" onclick="openTaskUrl()">🔗 Click Here to Visit Task URL</a>
         </div>
         <div class="warning-box">
           ⚠️ You MUST visit the website and copy the ACTUAL URL from your browser's address bar. Copy-pasting will not work!
@@ -1193,13 +1205,13 @@
 
   <script>
     // Configuration
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrG3B3qzKurECdGeoGbkwIYqYdcaHmGEsVrizhpaECL8XKKpmPmvSC126mzCajn9Wt/exec'; // Replace with your deployed Apps Script URL
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrG3B3qzKurECdGeoGbkwIYqYdcaHmGEsVrizhpaECL8XKKpmPmvSC126mzCajn9Wt/exec';
     
-    // Session management
+    // Session management with persistence
     const Session = {
       set: (data) => {
         localStorage.setItem('session', JSON.stringify(data));
-        localStorage.setItem('sessionTimestamp', Date.now());
+        localStorage.setItem('sessionTimestamp', Date.now().toString());
       },
       get: () => {
         const session = localStorage.getItem('session');
@@ -1274,7 +1286,11 @@
     async function logout() {
       const session = Session.get();
       if (session) {
-        await callAppScript('logout', { sessionId: session.sessionId });
+        try {
+          await callAppScript('logout', { sessionId: session.sessionId });
+        } catch (error) {
+          console.error('Logout API call failed:', error);
+        }
       }
       Session.clear();
       currentUser = null;
@@ -1325,8 +1341,12 @@
       try {
         const result = await callAppScript('getAvailableTasks', { userId: currentUser.userId });
         
-        if (result.tasks) {
+        if (result.tasks && result.tasks.length > 0) {
           displayTasks(result.tasks);
+        } else {
+          // Show empty state
+          const earnFeatures = document.getElementById('earnFeatures');
+          earnFeatures.innerHTML = '<div class="feature-item" style="width:100%; text-align:center;">No tasks available</div>';
         }
       } catch (error) {
         console.error('Failed to load tasks:', error);
@@ -1344,7 +1364,7 @@
         taskElement.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <span>${task.name}</span>
-            <span style="color: #10b981;">$${task.amount.toFixed(2)}</span>
+            <span style="color: #10b981;">$${task.amount.toFixed(4)}</span>
           </div>
         `;
         taskElement.onclick = () => openTaskModal(task);
@@ -1355,17 +1375,20 @@
     // Update UI with real data
     function updateUI(user, earnings) {
       // Update balance
-      document.getElementById('headerBalance').textContent = `$${user.currentBalance.toFixed(2)}`;
-      document.getElementById('panelCurrentBalance').textContent = `$${user.currentBalance.toFixed(2)}`;
-      document.getElementById('panelTotalEarned').textContent = `$${user.totalEarned.toFixed(2)}`;
-      document.getElementById('panelTotalWithdrawn').textContent = `$${user.totalWithdrawn.toFixed(2)}`;
+      document.getElementById('headerBalance').textContent = `$${user.currentBalance.toFixed(4)}`;
+      document.getElementById('panelCurrentBalance').textContent = `$${user.currentBalance.toFixed(4)}`;
+      document.getElementById('panelTotalEarned').textContent = `$${user.totalEarned.toFixed(4)}`;
+      document.getElementById('panelTotalWithdrawn').textContent = `$${user.totalWithdrawn.toFixed(4)}`;
       
       // Update user info
       document.getElementById('panelUsername').textContent = user.username;
       document.getElementById('panelEmail').textContent = `Email: ${user.email}`;
       document.getElementById('panelUserId').textContent = `ID: ${user.userId}`;
-      document.getElementById('avatarBtn').textContent = user.avatar;
-      document.getElementById('panelAvatar').textContent = user.avatar;
+      
+      // Set avatar
+      const avatarLetter = user.username.charAt(0).toUpperCase();
+      document.getElementById('avatarBtn').textContent = avatarLetter;
+      document.getElementById('panelAvatar').textContent = avatarLetter;
       
       // Update logs
       const logsContainer = document.getElementById('logsContainer');
@@ -1378,7 +1401,7 @@
           logEntry.innerHTML = `
             <span class="log-icon">${earning.source}</span>
             <span class="log-source">${earning.provider}</span>
-            <span class="log-amount">$${earning.amount.toFixed(2)}</span>
+            <span class="log-amount">$${earning.amount.toFixed(4)}</span>
           `;
           logsContainer.appendChild(logEntry);
         });
@@ -1392,7 +1415,7 @@
       const weeklyEarnings = earnings ? earnings
         .filter(e => new Date(e.date) > oneWeekAgo)
         .reduce((sum, e) => sum + e.amount, 0) : 0;
-      document.getElementById('weekEarned').textContent = `$${weeklyEarnings.toFixed(2)}`;
+      document.getElementById('weekEarned').textContent = `$${weeklyEarnings.toFixed(4)}`;
       
       // Update quests
       document.getElementById('questsCompleted').textContent = `${earnings ? earnings.length : 0}/10`;
@@ -1404,7 +1427,7 @@
       taskAttempts = { url: 1, website: 1, captcha1: 1, captcha2: 1 };
       
       document.getElementById('taskName').textContent = task.name;
-      document.getElementById('taskReward').textContent = `$${task.amount.toFixed(2)}`;
+      document.getElementById('taskReward').textContent = `$${task.amount.toFixed(4)}`;
       document.getElementById('taskProvider').textContent = task.provider;
       
       // Generate random captcha codes
@@ -1447,21 +1470,23 @@
           2. Complete any required actions on the website<br>
           3. <span style="color: #ef4444; font-weight: bold;">IMPORTANT:</span> Copy the EXACT URL from your browser's address bar<br>
           4. Return here and paste the URL in the next step<br><br>
-          <strong>Note:</strong> You cannot copy-paste - you must actually visit the site!
+          <strong>Note:</strong> You must actually visit the site - copy-pasting won't work!
         `;
         
-        // Set the website link
-        const websiteLink = document.getElementById('websiteLink');
-        if (currentTask && currentTask.website) {
-          websiteLink.href = currentTask.website;
-          websiteLink.textContent = `🔗 Visit: ${currentTask.website}`;
+        // Set the task URL link - use the URL column, not website
+        const taskUrlLink = document.getElementById('taskUrlLink');
+        if (currentTask && currentTask.url) {
+          taskUrlLink.href = currentTask.url;
+          taskUrlLink.textContent = `🔗 Visit: ${currentTask.url}`;
         }
       }
     }
 
-    function openWebsite() {
+    function openTaskUrl() {
       // Track that user clicked the link
-      localStorage.setItem('websiteVisited_' + currentTask.id, 'true');
+      if (currentTask) {
+        localStorage.setItem('websiteVisited_' + currentTask.id, 'true');
+      }
     }
 
     function closeTaskModal() {
@@ -1494,7 +1519,7 @@
           
           if (result.success) {
             closeTaskModal();
-            await loadAvailableTasks(); // Refresh tasks
+            await loadAvailableTasks();
           }
         } catch (error) {
           alert('Failed to reject task: ' + error.message);
@@ -1583,7 +1608,7 @@
     }
 
     async function verifyWebsite() {
-      const website = document.getElementById('websiteInput').value.trim();
+      const website = document.getElementById('websiteInput').value.trim().toLowerCase();
       
       try {
         const result = await callAppScript('verifyTaskWebsite', {
@@ -1636,9 +1661,14 @@
           progressFill.style.background = '#10b981';
           
           // Update user balance
-          currentUser.currentBalance = result.newBalance;
-          document.getElementById('headerBalance').textContent = `$${result.newBalance.toFixed(2)}`;
-          document.getElementById('panelCurrentBalance').textContent = `$${result.newBalance.toFixed(2)}`;
+          if (currentUser) {
+            currentUser.currentBalance = result.newBalance;
+            currentUser.totalEarned = (currentUser.totalEarned || 0) + currentTask.amount;
+          }
+          
+          document.getElementById('headerBalance').textContent = `$${result.newBalance.toFixed(4)}`;
+          document.getElementById('panelCurrentBalance').textContent = `$${result.newBalance.toFixed(4)}`;
+          document.getElementById('panelTotalEarned').textContent = `$${(currentUser?.totalEarned || 0).toFixed(4)}`;
           
           // Add to logs
           addEarningLog(result.earning);
@@ -1648,7 +1678,7 @@
           
           setTimeout(() => {
             closeTaskModal();
-            loadAvailableTasks(); // Refresh tasks
+            loadAvailableTasks();
           }, 2000);
         } else {
           statusEl.innerHTML = '<span class="status-failure">✗ Verification Failed</span>';
@@ -1667,7 +1697,7 @@
       logEntry.innerHTML = `
         <span class="log-icon">${earning.source}</span>
         <span class="log-source">${earning.provider}</span>
-        <span class="log-amount">$${earning.amount.toFixed(2)}</span>
+        <span class="log-amount">$${earning.amount.toFixed(4)}</span>
       `;
       logsContainer.insertBefore(logEntry, logsContainer.firstChild);
     }
@@ -1686,6 +1716,19 @@
 
     // Initialize
     document.addEventListener('DOMContentLoaded', async () => {
+      // Clear any old session data that might cause issues
+      const oldSession = localStorage.getItem('session');
+      if (oldSession) {
+        try {
+          const session = JSON.parse(oldSession);
+          if (!session.sessionId || !session.token) {
+            Session.clear();
+          }
+        } catch {
+          Session.clear();
+        }
+      }
+      
       // Check for existing session
       const hasValidSession = await checkSession();
       
