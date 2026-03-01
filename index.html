@@ -119,6 +119,10 @@
       transition: all 0.2s;
     }
 
+    .form-group input::placeholder {
+      color: #4b5563;
+    }
+
     .form-group input:focus {
       border-color: #3b82f6;
       box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
@@ -525,6 +529,7 @@
       white-space: nowrap;
       flex-shrink: 0;
       transition: 0.1s;
+      cursor: pointer;
     }
 
     .log-entry:hover {
@@ -554,6 +559,96 @@
       padding: 4px 12px;
       border-radius: 40px;
       font-size: 0.9rem;
+    }
+
+    /* Reward Cards */
+    .rewards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .reward-card {
+      background: var(--card-bg);
+      border: 2px solid;
+      border-radius: 16px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .reward-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .reward-card.selected {
+      transform: scale(1.02);
+      box-shadow: 0 0 20px currentColor;
+    }
+
+    .reward-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .reward-cost {
+      font-size: 24px;
+      font-weight: 700;
+      color: #10b981;
+      margin-bottom: 8px;
+    }
+
+    .reward-info {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      min-height: 40px;
+    }
+
+    .reward-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      backdrop-filter: blur(4px);
+    }
+
+    .redeem-button {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 20px;
+    }
+
+    .redeem-button:hover:not(:disabled) {
+      background: #2563eb;
+    }
+
+    .redeem-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .redeem-button.insufficient {
+      background: #4b5563;
+      cursor: not-allowed;
     }
 
     /* Task Modal */
@@ -942,6 +1037,9 @@
       .modal-content {
         padding: 20px;
       }
+      .rewards-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -956,16 +1054,18 @@
       <div class="login-form">
         <div class="form-group">
           <label>Username or Email</label>
-          <input type="text" id="loginUsername" placeholder="mattsm680 or mattsm680@gmail.com" value="mattsm680">
+          <input type="text" id="loginUsername" placeholder="Enter your username or email">
         </div>
         <div class="form-group">
           <label>Password</label>
-          <input type="password" id="loginPassword" placeholder="••••••••" value="demo123">
+          <input type="password" id="loginPassword" placeholder="Enter your password">
         </div>
         <div class="error-message" id="loginError"></div>
         <button class="login-button" id="loginButton">Sign In</button>
       </div>
-      
+      <div class="demo-credentials">
+        Demo: Use your registered credentials
+      </div>
     </div>
   </div>
 
@@ -996,32 +1096,32 @@
             <div class="user-row">
               <div class="user-avatar-large" id="panelAvatar">M</div>
               <div class="user-details">
-                <span class="user-name" id="panelUsername">mattsm680</span>
-                <span class="user-email" id="panelEmail">email@example.com</span>
-                <span class="user-id" id="panelUserId">ID: 323</span>
+                <span class="user-name" id="panelUsername">Loading...</span>
+                <span class="user-email" id="panelEmail">Loading...</span>
+                <span class="user-id" id="panelUserId">ID: Loading...</span>
               </div>
             </div>
             <div class="stats-grid">
               <div class="stat-item">
                 <span class="stat-label">Current Balance</span>
-                <span class="stat-value" id="panelCurrentBalance">$0.56</span>
+                <span class="stat-value" id="panelCurrentBalance">$0.00</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Total Earned</span>
-                <span class="stat-value" id="panelTotalEarned">$1.56</span>
+                <span class="stat-value" id="panelTotalEarned">$0.00</span>
               </div>
               <div class="stat-item full-width">
                 <span class="stat-label">Total Withdrawn</span>
-                <span class="stat-value" id="panelTotalWithdrawn">$1.00</span>
+                <span class="stat-value" id="panelTotalWithdrawn">$0.00</span>
               </div>
             </div>
             <div class="divider-light"></div>
-            <div class="log-row" onclick="window.location.href='#earn'">
-              <span class="log-left">Offer Logs</span>
+            <div class="log-row" id="offerLogsBtn">
+              <span class="log-left">📋 Offer Logs</span>
               <span class="log-arrow">→</span>
             </div>
-            <div class="log-row" onclick="window.location.href='#withdraw'">
-              <span class="log-left">Reward Logs</span>
+            <div class="log-row" id="rewardLogsBtn">
+              <span class="log-left">🎁 Reward Logs</span>
               <span class="log-arrow">→</span>
             </div>
             <button class="logout-button" id="logoutBtn">Logout</button>
@@ -1072,8 +1172,10 @@
         <div class="section-content">
           <h2 class="section-title">Withdraw</h2>
           <div class="section-desc">Minimum $0.50 · instant payouts to PayPal, crypto or gift cards.</div>
-          <div class="feature-grid" id="withdrawFeatures"></div>
-          <div style="margin-top:20px;"><span class="action-pill" onclick="alert('Withdrawal feature coming soon!')">→ request payout</span></div>
+          <div class="rewards-grid" id="rewardsGrid">
+            <!-- Rewards will be populated dynamically -->
+          </div>
+          <button class="redeem-button" id="redeemButton" onclick="redeemSelectedReward()" disabled>Select a reward to redeem</button>
         </div>
       </section>
       <section class="section-card" id="promocode" data-section-content="promocode">
@@ -1201,6 +1303,22 @@
     </div>
   </div>
 
+  <!-- Reward Info Modal -->
+  <div class="modal" id="rewardInfoModal">
+    <div class="modal-content">
+      <h2 class="modal-title" id="rewardModalTitle">Reward Information</h2>
+      <div class="modal-subtitle" id="rewardModalSubtitle">Details about your reward</div>
+      
+      <div class="task-details" id="rewardDetails">
+        <!-- Will be populated dynamically -->
+      </div>
+      
+      <div class="button-group">
+        <button class="button button-primary" onclick="closeRewardModal()">OK</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Configuration
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrG3B3qzKurECdGeoGbkwIYqYdcaHmGEsVrizhpaECL8XKKpmPmvSC126mzCajn9Wt/exec';
@@ -1241,6 +1359,7 @@
       captcha2: 1
     };
     let captchaCodes = {};
+    let selectedReward = null;
 
     // API calls
     async function callAppScript(action, params = {}) {
@@ -1328,6 +1447,7 @@
           currentUser = result.user;
           updateUI(result.user, result.earnings);
           await loadAvailableTasks();
+          await loadAvailableRewards();
         }
       } catch (error) {
         console.error('Failed to load user data:', error);
@@ -1342,12 +1462,27 @@
         if (result.tasks && result.tasks.length > 0) {
           displayTasks(result.tasks);
         } else {
-          // Show empty state
           const earnFeatures = document.getElementById('earnFeatures');
           earnFeatures.innerHTML = '<div class="feature-item" style="width:100%; text-align:center;">No tasks available</div>';
         }
       } catch (error) {
         console.error('Failed to load tasks:', error);
+      }
+    }
+
+    // Load available rewards
+    async function loadAvailableRewards() {
+      try {
+        const result = await callAppScript('getAvailableRewards', { userId: currentUser.userId });
+        
+        if (result.rewards && result.rewards.length > 0) {
+          displayRewards(result.rewards);
+        } else {
+          const rewardsGrid = document.getElementById('rewardsGrid');
+          rewardsGrid.innerHTML = '<div class="feature-item" style="width:100%; text-align:center;">No rewards available</div>';
+        }
+      } catch (error) {
+        console.error('Failed to load rewards:', error);
       }
     }
 
@@ -1370,6 +1505,126 @@
       });
     }
 
+    // Display rewards in withdraw section
+    function displayRewards(rewards) {
+      const rewardsGrid = document.getElementById('rewardsGrid');
+      rewardsGrid.innerHTML = '';
+      
+      rewards.forEach(reward => {
+        const card = document.createElement('div');
+        card.className = 'reward-card';
+        card.style.borderColor = reward.cardColor || '#3b82f6';
+        card.setAttribute('data-reward-id', reward.id);
+        
+        card.innerHTML = `
+          <div class="reward-name">${reward.name}</div>
+          <div class="reward-cost">$${reward.cost.toFixed(2)}</div>
+          <div class="reward-info">${reward.info}</div>
+          <div class="reward-badge">${reward.cost > (currentUser?.currentBalance || 0) ? 'Insufficient Balance' : 'Available'}</div>
+        `;
+        
+        card.onclick = () => selectReward(reward, card);
+        rewardsGrid.appendChild(card);
+      });
+    }
+
+    // Select a reward
+    function selectReward(reward, cardElement) {
+      // Remove selected class from all cards
+      document.querySelectorAll('.reward-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+      
+      // Add selected class to clicked card
+      cardElement.classList.add('selected');
+      selectedReward = reward;
+      
+      // Update redeem button
+      const redeemButton = document.getElementById('redeemButton');
+      if (reward.cost <= (currentUser?.currentBalance || 0)) {
+        redeemButton.disabled = false;
+        redeemButton.classList.remove('insufficient');
+        redeemButton.textContent = `Redeem ${reward.name} for $${reward.cost.toFixed(2)}`;
+      } else {
+        redeemButton.disabled = true;
+        redeemButton.classList.add('insufficient');
+        redeemButton.textContent = `Insufficient Balance (Need $${(reward.cost - (currentUser?.currentBalance || 0)).toFixed(2)} more)`;
+      }
+    }
+
+    // Redeem selected reward
+    async function redeemSelectedReward() {
+      if (!selectedReward) {
+        alert('Please select a reward first');
+        return;
+      }
+      
+      if (selectedReward.cost > (currentUser?.currentBalance || 0)) {
+        alert('Insufficient balance for this reward');
+        return;
+      }
+      
+      if (confirm(`Are you sure you want to redeem ${selectedReward.name} for $${selectedReward.cost.toFixed(2)}?`)) {
+        try {
+          const result = await callAppScript('redeemReward', {
+            userId: currentUser.userId,
+            rewardId: selectedReward.id
+          });
+          
+          if (result.success) {
+            alert(`Successfully redeemed ${selectedReward.name}! Check your email for details.`);
+            
+            // Update user balance
+            currentUser.currentBalance = result.newBalance;
+            currentUser.totalWithdrawn = (currentUser.totalWithdrawn || 0) + selectedReward.cost;
+            
+            // Update UI
+            document.getElementById('headerBalance').textContent = `$${result.newBalance.toFixed(4)}`;
+            document.getElementById('panelCurrentBalance').textContent = `$${result.newBalance.toFixed(4)}`;
+            document.getElementById('panelTotalWithdrawn').textContent = `$${currentUser.totalWithdrawn.toFixed(4)}`;
+            
+            // Reload rewards
+            await loadAvailableRewards();
+          }
+        } catch (error) {
+          alert('Failed to redeem reward: ' + error.message);
+        }
+      }
+    }
+
+    // Show reward info
+    function showRewardInfo(reward) {
+      const modal = document.getElementById('rewardInfoModal');
+      const details = document.getElementById('rewardDetails');
+      
+      details.innerHTML = `
+        <div class="task-row">
+          <span class="task-label">Reward:</span>
+          <span class="task-value">${reward.name}</span>
+        </div>
+        <div class="task-row">
+          <span class="task-label">Cost:</span>
+          <span class="task-value amount">$${reward.cost.toFixed(2)}</span>
+        </div>
+        <div class="task-row">
+          <span class="task-label">Information:</span>
+          <span class="task-value">${reward.info}</span>
+        </div>
+        <div class="task-row">
+          <span class="task-label">Status:</span>
+          <span class="task-value" style="color: ${reward.cost > (currentUser?.currentBalance || 0) ? '#ef4444' : '#10b981'}">
+            ${reward.cost > (currentUser?.currentBalance || 0) ? 'Insufficient Balance' : 'Available'}
+          </span>
+        </div>
+      `;
+      
+      modal.classList.add('active');
+    }
+
+    function closeRewardModal() {
+      document.getElementById('rewardInfoModal').classList.remove('active');
+    }
+
     // Update UI with real data
     function updateUI(user, earnings) {
       // Update balance
@@ -1384,7 +1639,7 @@
       document.getElementById('panelUserId').textContent = `ID: ${user.userId}`;
       
       // Set avatar
-      const avatarLetter = user.username.charAt(0).toUpperCase();
+      const avatarLetter = user.username ? user.username.charAt(0).toUpperCase() : 'U';
       document.getElementById('avatarBtn').textContent = avatarLetter;
       document.getElementById('panelAvatar').textContent = avatarLetter;
       
@@ -1396,11 +1651,14 @@
         earnings.slice(0, 10).forEach(earning => {
           const logEntry = document.createElement('div');
           logEntry.className = 'log-entry';
+          logEntry.setAttribute('data-earning-id', earning.id);
+          logEntry.setAttribute('data-earning-type', 'earn');
           logEntry.innerHTML = `
             <span class="log-icon">${earning.source}</span>
             <span class="log-source">${earning.provider}</span>
             <span class="log-amount">$${earning.amount.toFixed(4)}</span>
           `;
+          logEntry.onclick = () => showEarningInfo(earning);
           logsContainer.appendChild(logEntry);
         });
       }
@@ -1417,6 +1675,40 @@
       
       // Update quests
       document.getElementById('questsCompleted').textContent = `${earnings ? earnings.length : 0}/10`;
+    }
+
+    // Show earning info
+    function showEarningInfo(earning) {
+      const modal = document.getElementById('rewardInfoModal');
+      const details = document.getElementById('rewardDetails');
+      
+      document.getElementById('rewardModalTitle').textContent = 'Earning Details';
+      document.getElementById('rewardModalSubtitle').textContent = 'Information about this earning';
+      
+      details.innerHTML = `
+        <div class="task-row">
+          <span class="task-label">Source:</span>
+          <span class="task-value">${earning.source}</span>
+        </div>
+        <div class="task-row">
+          <span class="task-label">Provider:</span>
+          <span class="task-value">${earning.provider}</span>
+        </div>
+        <div class="task-row">
+          <span class="task-label">Amount:</span>
+          <span class="task-value amount">$${earning.amount.toFixed(4)}</span>
+        </div>
+        <div class="task-row">
+          <span class="task-label">Date:</span>
+          <span class="task-value">${new Date(earning.date).toLocaleString()}</span>
+        </div>
+        <div class="task-row">
+          <span class="task-label">Status:</span>
+          <span class="task-value" style="color: #10b981;">${earning.status}</span>
+        </div>
+      `;
+      
+      modal.classList.add('active');
     }
 
     // Task modal functions
@@ -1448,7 +1740,6 @@
       document.getElementById('taskStep6').style.display = step === 6 ? 'block' : 'none';
       document.getElementById('taskStep7').style.display = step === 7 ? 'block' : 'none';
       
-      // Update modal title based on step
       const titles = {
         1: 'Task Details',
         2: 'Visit Website',
@@ -1460,7 +1751,6 @@
       };
       document.getElementById('modalTitle').textContent = titles[step] || 'Complete Task';
       
-      // Load instructions if step 2
       if (step === 2) {
         document.getElementById('instructions').innerHTML = `
           <strong>Task Instructions:</strong><br><br>
@@ -1471,7 +1761,6 @@
           <strong>Note:</strong> You must actually visit the site - copy-pasting won't work!
         `;
         
-        // Set the task URL link - use the URL column, not website
         const taskUrlLink = document.getElementById('taskUrlLink');
         if (currentTask && currentTask.url) {
           taskUrlLink.href = currentTask.url;
@@ -1481,7 +1770,6 @@
     }
 
     function openTaskUrl() {
-      // Track that user clicked the link
       if (currentTask) {
         localStorage.setItem('websiteVisited_' + currentTask.id, 'true');
       }
@@ -1526,7 +1814,6 @@
     }
 
     function proceedToStep3() {
-      // Check if user visited the website
       const visited = localStorage.getItem('websiteVisited_' + currentTask.id);
       if (!visited) {
         if (!confirm('You haven\'t clicked the website link. Are you sure you visited the website and copied the URL?')) {
@@ -1555,7 +1842,6 @@
     async function verifyUrl() {
       const url = document.getElementById('urlInput').value;
       
-      // Basic validation to ensure it's a real URL
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         alert('Please enter a valid URL starting with http:// or https://');
         return;
@@ -1641,7 +1927,6 @@
       const progressFill = document.getElementById('progressFill');
       const statusEl = document.getElementById('verificationStatus');
       
-      // Simulate verification progress
       for (let i = 0; i <= 100; i += 20) {
         progressFill.style.width = i + '%';
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -1658,7 +1943,6 @@
           progressFill.style.width = '100%';
           progressFill.style.background = '#10b981';
           
-          // Update user balance
           if (currentUser) {
             currentUser.currentBalance = result.newBalance;
             currentUser.totalEarned = (currentUser.totalEarned || 0) + currentTask.amount;
@@ -1668,15 +1952,14 @@
           document.getElementById('panelCurrentBalance').textContent = `$${result.newBalance.toFixed(4)}`;
           document.getElementById('panelTotalEarned').textContent = `$${(currentUser?.totalEarned || 0).toFixed(4)}`;
           
-          // Add to logs
           addEarningLog(result.earning);
           
-          // Clear the visited flag
           localStorage.removeItem('websiteVisited_' + currentTask.id);
           
           setTimeout(() => {
             closeTaskModal();
             loadAvailableTasks();
+            loadAvailableRewards(); // Reload rewards to update balance display
           }, 2000);
         } else {
           statusEl.innerHTML = '<span class="status-failure">✗ Verification Failed</span>';
@@ -1692,11 +1975,14 @@
       const logsContainer = document.getElementById('logsContainer');
       const logEntry = document.createElement('div');
       logEntry.className = 'log-entry';
+      logEntry.setAttribute('data-earning-id', earning.id);
+      logEntry.setAttribute('data-earning-type', 'earn');
       logEntry.innerHTML = `
         <span class="log-icon">${earning.source}</span>
         <span class="log-source">${earning.provider}</span>
         <span class="log-amount">$${earning.amount.toFixed(4)}</span>
       `;
+      logEntry.onclick = () => showEarningInfo(earning);
       logsContainer.insertBefore(logEntry, logsContainer.firstChild);
     }
 
@@ -1704,6 +1990,10 @@
     function showLogin() {
       document.getElementById('loginOverlay').classList.remove('hidden');
       document.getElementById('appShell').classList.add('hidden');
+      
+      // Clear input fields
+      document.getElementById('loginUsername').value = '';
+      document.getElementById('loginPassword').value = '';
     }
 
     // Show main app
@@ -1714,7 +2004,7 @@
 
     // Initialize
     document.addEventListener('DOMContentLoaded', async () => {
-      // Clear any old session data that might cause issues
+      // Clear any old session data
       const oldSession = localStorage.getItem('session');
       if (oldSession) {
         try {
@@ -1743,6 +2033,11 @@
         const errorEl = document.getElementById('loginError');
         const button = document.getElementById('loginButton');
         
+        if (!username || !password) {
+          errorEl.textContent = 'Please enter both username and password';
+          return;
+        }
+        
         button.disabled = true;
         button.innerHTML = '<span class="loading"></span>';
         errorEl.textContent = '';
@@ -1768,6 +2063,55 @@
       
       // Logout handler
       document.getElementById('logoutBtn').addEventListener('click', logout);
+      
+      // Offer Logs button in account panel
+      document.getElementById('offerLogsBtn').addEventListener('click', () => {
+        document.getElementById('accountPanel').classList.remove('show');
+        // Switch to earn section and scroll to logs
+        showSection('earn');
+      });
+      
+      // Reward Logs button in account panel
+      document.getElementById('rewardLogsBtn').addEventListener('click', () => {
+        document.getElementById('accountPanel').classList.remove('show');
+        // Show reward info modal with last reward or general info
+        if (currentUser) {
+          const modal = document.getElementById('rewardInfoModal');
+          const details = document.getElementById('rewardDetails');
+          
+          document.getElementById('rewardModalTitle').textContent = 'Reward Logs';
+          document.getElementById('rewardModalSubtitle').textContent = 'Your recent redemptions';
+          
+          // Load withdrawal history
+          callAppScript('getWithdrawals', { userId: currentUser.userId }).then(result => {
+            if (result.withdrawals && result.withdrawals.length > 0) {
+              let html = '';
+              result.withdrawals.slice(0, 5).forEach(w => {
+                html += `
+                  <div class="task-row">
+                    <span class="task-label">${w.method}:</span>
+                    <span class="task-value amount">$${w.amount.toFixed(4)}</span>
+                  </div>
+                  <div class="task-row">
+                    <span class="task-label">Status:</span>
+                    <span class="task-value" style="color: ${w.status === 'completed' ? '#10b981' : '#f59e0b'}">${w.status}</span>
+                  </div>
+                  <div class="task-row">
+                    <span class="task-label">Date:</span>
+                    <span class="task-value">${new Date(w.requestDate).toLocaleDateString()}</span>
+                  </div>
+                  <div style="height: 10px;"></div>
+                `;
+              });
+              details.innerHTML = html || '<div class="task-row">No redemption history</div>';
+            } else {
+              details.innerHTML = '<div class="task-row">No redemption history</div>';
+            }
+          });
+          
+          modal.classList.add('active');
+        }
+      });
       
       // Navigation handlers
       const navLinks = document.querySelectorAll('.nav-link');
