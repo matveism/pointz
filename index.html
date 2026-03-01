@@ -46,6 +46,101 @@
       padding: 24px 16px;
     }
 
+    /* Loader */
+    .loader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease;
+    }
+
+    .loader-overlay.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loader-container {
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+    }
+
+    .loader-logo {
+      margin-bottom: 30px;
+      animation: pulse 2s infinite;
+    }
+
+    .loader-logo img {
+      max-width: 200px;
+      height: auto;
+      filter: brightness(1) drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));
+    }
+
+    .loader-text {
+      color: white;
+      font-size: 18px;
+      margin-bottom: 20px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .loader-text span {
+      color: #3b82f6;
+      font-weight: 600;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 4px;
+      background: #1f2937;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
+      border-radius: 4px;
+      animation: progress 2.5s ease-in-out infinite;
+      background-size: 200% 100%;
+    }
+
+    @keyframes progress {
+      0% {
+        width: 0%;
+        background-position: 0% 50%;
+      }
+      50% {
+        width: 70%;
+        background-position: 100% 50%;
+      }
+      100% {
+        width: 100%;
+        background-position: 0% 50%;
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.9;
+        transform: scale(1.02);
+      }
+    }
+
     /* Login Overlay */
     .login-overlay {
       position: fixed;
@@ -59,10 +154,14 @@
       align-items: center;
       justify-content: center;
       z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
     }
 
-    .login-overlay.hidden {
-      display: none;
+    .login-overlay.visible {
+      opacity: 1;
+      pointer-events: all;
     }
 
     .login-container {
@@ -73,6 +172,12 @@
       width: 100%;
       max-width: 400px;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      transform: translateY(20px);
+      transition: transform 0.3s ease;
+    }
+
+    .login-overlay.visible .login-container {
+      transform: translateY(0);
     }
 
     .login-logo {
@@ -179,12 +284,15 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
-    .app-shell.hidden {
-      display: none;
+    .app-shell.visible {
+      opacity: 1;
     }
 
+    /* Rest of your existing styles remain exactly the same */
     /* Navbar */
     .top-nav {
       height: 64px;
@@ -1212,6 +1320,21 @@
   </style>
 </head>
 <body>
+  <!-- Loader -->
+  <div class="loader-overlay" id="loader">
+    <div class="loader-container">
+      <div class="loader-logo">
+        <img src="https://i.postimg.cc/QCDzkYCF/Screenshot-2026-02-28-at-6-23-02-PM-removebg-preview.png" alt="POINTZ">
+      </div>
+      <div class="loader-text">
+        Loading <span>POINTZ</span>...
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Login Overlay -->
   <div class="login-overlay" id="loginOverlay">
     <div class="login-container">
@@ -1238,7 +1361,7 @@
   </div>
 
   <!-- Main App -->
-  <div class="app-shell hidden" id="appShell">
+  <div class="app-shell" id="appShell">
     <!-- Navbar -->
     <header class="top-nav">
       <div class="nav-left">
@@ -2226,24 +2349,26 @@
       logsContainer.insertBefore(logEntry, logsContainer.firstChild);
     }
 
-    // Show login overlay
+    // Show login overlay with fade in
     function showLogin() {
-      document.getElementById('loginOverlay').classList.remove('hidden');
-      document.getElementById('appShell').classList.add('hidden');
+      document.getElementById('loginOverlay').classList.add('visible');
+      document.getElementById('appShell').classList.remove('visible');
       
       document.getElementById('loginUsername').value = '';
       document.getElementById('loginPassword').value = '';
     }
 
-    // Show main app
+    // Show main app with fade in
     function showApp() {
-      document.getElementById('loginOverlay').classList.add('hidden');
-      document.getElementById('appShell').classList.remove('hidden');
+      document.getElementById('loginOverlay').classList.remove('visible');
+      document.getElementById('appShell').classList.add('visible');
     }
 
-    // Initialize
+    // Initialize with loader
     document.addEventListener('DOMContentLoaded', async () => {
+      const loader = document.getElementById('loader');
       const oldSession = localStorage.getItem('session');
+      
       if (oldSession) {
         try {
           const session = JSON.parse(oldSession);
@@ -2255,13 +2380,24 @@
         }
       }
       
-      const hasValidSession = await checkSession();
-      
-      if (hasValidSession) {
-        showApp();
-      } else {
-        showLogin();
-      }
+      // Show loader for minimum 2.5 seconds for better UX
+      setTimeout(async () => {
+        const hasValidSession = await checkSession();
+        
+        if (hasValidSession) {
+          showApp();
+        } else {
+          showLogin();
+        }
+        
+        // Fade out loader
+        loader.classList.add('fade-out');
+        
+        // Remove loader from DOM after fade
+        setTimeout(() => {
+          loader.style.display = 'none';
+        }, 500);
+      }, 2500);
       
       document.getElementById('loginButton').addEventListener('click', async () => {
         const username = document.getElementById('loginUsername').value;
