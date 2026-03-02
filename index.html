@@ -1038,6 +1038,16 @@
       font-size: 13px;
     }
 
+    .info-box {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid #3b82f6;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 16px 0;
+      color: #bae6fd;
+      font-size: 13px;
+    }
+
     .captcha-box {
       background: #1e293b;
       border-radius: 12px;
@@ -1546,12 +1556,15 @@
           Loading instructions...
         </div>
         <div style="text-align: center; margin: 16px 0;">
-          <a href="#" id="taskUrlLink" class="website-link" target="_blank" onclick="openTaskUrl()">🔗 Click Here to Visit Task URL</a>
+          <a href="#" id="taskUrlLink" class="website-link" target="_blank" onclick="openTaskUrl(event)">🔗 Click Here to Visit Task URL</a>
+        </div>
+        <div class="info-box">
+          ℹ️ After clicking the link, you'll be redirected to the final website. Copy the FINAL URL from your browser's address bar.
         </div>
         <div class="warning-box">
-          ⚠️ You MUST visit the website and copy the ACTUAL URL from your browser's address bar. Copy-pasting will not work!
+          ⚠️ You MUST enter the FINAL redirected URL, NOT the shortlink! Copy the URL after all redirects complete.
         </div>
-        <button class="button button-primary" onclick="proceedToStep3()">I've Visited and Copied the URL</button>
+        <button class="button button-primary" onclick="proceedToStep3()">I've Visited and Copied the FINAL URL</button>
       </div>
       
       <div id="taskStep3" style="display: none;">
@@ -1565,11 +1578,14 @@
       <div id="taskStep4" style="display: none;">
         <div class="task-details">
           <div class="task-row">
-            <span class="task-label">Paste the URL from your browser:</span>
+            <span class="task-label">Paste the FINAL URL from your browser:</span>
           </div>
-          <input type="url" class="captcha-input" id="urlInput" placeholder="https://example.com/page?id=123">
+          <input type="url" class="captcha-input" id="urlInput" placeholder="https://final-website.com/page?id=123">
+          <div class="info-box" style="margin-top: 12px;">
+            ℹ️ This should be the URL after all redirects complete, NOT the shortlink you clicked.
+          </div>
           <div style="margin-top: 12px; color: #ef4444; font-size: 13px;">
-            ⚠️ Only ONE attempt allowed! Make sure it's the exact URL from your browser.
+            ⚠️ Only ONE attempt allowed! Make sure it's the exact FINAL URL from your browser.
           </div>
         </div>
         <button class="button button-primary" onclick="verifyUrl()">Submit URL</button>
@@ -1586,11 +1602,14 @@
       <div id="taskStep6" style="display: none;">
         <div class="task-details">
           <div class="task-row">
-            <span class="task-label">Enter the website name:</span>
+            <span class="task-label">Enter the FINAL website domain:</span>
           </div>
           <input type="text" class="captcha-input" id="websiteInput" placeholder="example.com">
+          <div class="info-box" style="margin-top: 12px;">
+            ℹ️ Enter the domain name of the FINAL website (where you ended up after redirects).
+          </div>
           <div style="margin-top: 12px; color: #ef4444; font-size: 13px;">
-            ⚠️ Only ONE attempt allowed! Enter the domain name exactly as shown.
+            ⚠️ Only ONE attempt allowed! Enter the domain name exactly as shown in the URL.
           </div>
         </div>
         <button class="button button-primary" onclick="verifyWebsite()">Verify</button>
@@ -2107,9 +2126,9 @@
         1: 'Task Details',
         2: 'Visit Website',
         3: 'Verify Captcha',
-        4: 'Enter URL from Browser',
+        4: 'Enter FINAL URL from Browser',
         5: 'Verify Captcha Again',
-        6: 'Verify Website Name',
+        6: 'Verify Final Website Name',
         7: 'Verifying'
       };
       document.getElementById('modalTitle').textContent = titles[step] || 'Complete Task';
@@ -2118,23 +2137,35 @@
         document.getElementById('instructions').innerHTML = `
           <strong>Task Instructions:</strong><br><br>
           1. Click the link below to visit the website<br>
-          2. Complete any required actions on the website<br>
-          3. <span style="color: #ef4444; font-weight: bold;">IMPORTANT:</span> Copy the EXACT URL from your browser's address bar<br>
-          4. Return here and paste the URL in the next step<br><br>
-          <strong>Note:</strong> You must actually visit the site - copy-pasting won't work!
+          2. Wait for ALL redirects to complete (you'll end up on the final website)<br>
+          3. <span style="color: #ef4444; font-weight: bold;">IMPORTANT:</span> Copy the EXACT FINAL URL from your browser's address bar<br>
+          4. Return here and paste the FINAL URL in the next step<br><br>
+          <strong>Note:</strong> We need the URL after all redirects, NOT the shortlink!
         `;
         
         const taskUrlLink = document.getElementById('taskUrlLink');
-        if (currentTask && currentTask.url) {
+        if (currentTask && currentTask.shortlink) { // Using shortlink from I2 column
+          taskUrlLink.href = currentTask.shortlink;
+          taskUrlLink.textContent = `🔗 Visit: ${currentTask.shortlink}`;
+        } else if (currentTask && currentTask.url) {
           taskUrlLink.href = currentTask.url;
           taskUrlLink.textContent = `🔗 Visit: ${currentTask.url}`;
         }
       }
     }
 
-    function openTaskUrl() {
+    function openTaskUrl(event) {
+      event.preventDefault();
       if (currentTask) {
-        localStorage.setItem('websiteVisited_' + currentTask.id, 'true');
+        // Store that user clicked the link
+        localStorage.setItem('websiteVisited_' + currentTask.id, Date.now().toString());
+        
+        // Open in new tab
+        if (currentTask.shortlink) {
+          window.open(currentTask.shortlink, '_blank');
+        } else if (currentTask.url) {
+          window.open(currentTask.url, '_blank');
+        }
       }
     }
 
@@ -2179,7 +2210,7 @@
     function proceedToStep3() {
       const visited = localStorage.getItem('websiteVisited_' + currentTask.id);
       if (!visited) {
-        if (!confirm('You haven\'t clicked the website link. Are you sure you visited the website and copied the URL?')) {
+        if (!confirm('You haven\'t clicked the website link. Are you sure you visited the website and copied the FINAL URL?')) {
           return;
         }
       }
@@ -2203,14 +2234,35 @@
     }
 
     async function verifyUrl() {
-      const url = document.getElementById('urlInput').value;
+      const url = document.getElementById('urlInput').value.trim();
       
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         alert('Please enter a valid URL starting with http:// or https://');
         return;
       }
       
+      // Check if the URL is a shortlink domain (you can expand this list)
+      const shortlinkDomains = ['bit.ly', 'tinyurl.com', 'goo.gl', 'ow.ly', 'is.gd', 'buff.ly', 'adf.ly', 'shorte.st', 'bc.vc', 't.co', 'lnkd.in', 'db.tt', 'qr.ae', 'cur.lv', 'bitly.com', 'tiny.cc', 'tr.im', 'v.gd', 'cli.gs', 'zip.net', 's.id', 'rb.gy', 'short.link', 'shorturl.at', 'cutt.ly', 'rebrand.ly', 't.ly', 'short.link', 'x.co', '1url.com', 'short.cm', 'shorturl.com'];
+      
       try {
+        const urlObj = new URL(url);
+        const domain = urlObj.hostname.replace('www.', '');
+        
+        if (shortlinkDomains.some(shortDomain => domain.includes(shortDomain))) {
+          alert('❌ This appears to be a shortlink! Please enter the FINAL URL after all redirects complete.');
+          taskAttempts.url--;
+          if (taskAttempts.url <= 0) {
+            alert('Invalid URL. No attempts remaining. Task cancelled.');
+            await callAppScript('failTask', {
+              userId: currentUser.userId,
+              taskId: currentTask.id,
+              reason: 'Entered shortlink instead of final URL'
+            });
+            closeTaskModal();
+          }
+          return;
+        }
+        
         const result = await callAppScript('verifyTaskUrl', {
           userId: currentUser.userId,
           taskId: currentTask.id,
@@ -2230,7 +2282,7 @@
             });
             closeTaskModal();
           } else {
-            alert(`Invalid URL. ${taskAttempts.url} attempt(s) remaining. Make sure you copied the exact URL from your browser!`);
+            alert(`Invalid URL. ${taskAttempts.url} attempt(s) remaining. Make sure you copied the exact FINAL URL from your browser!`);
           }
         }
       } catch (error) {
@@ -2255,7 +2307,20 @@
     }
 
     async function verifyWebsite() {
-      const website = document.getElementById('websiteInput').value.trim().toLowerCase();
+      const website = document.getElementById('websiteInput').value.trim().toLowerCase().replace('www.', '');
+      
+      // Check if it's a shortlink domain
+      const shortlinkDomains = ['bit.ly', 'tinyurl.com', 'goo.gl', 'ow.ly', 'is.gd', 'buff.ly', 'adf.ly', 'shorte.st', 'bc.vc', 't.co', 'lnkd.in', 'db.tt', 'qr.ae', 'cur.lv', 'bitly.com', 'tiny.cc', 'tr.im', 'v.gd', 'cli.gs', 'zip.net', 's.id', 'rb.gy', 'short.link', 'shorturl.at', 'cutt.ly', 'rebrand.ly', 't.ly', 'short.link', 'x.co', '1url.com', 'short.cm', 'shorturl.com'];
+      
+      if (shortlinkDomains.some(domain => website.includes(domain))) {
+        alert('❌ This appears to be a shortlink domain! Please enter the FINAL website domain after redirects.');
+        taskAttempts.website--;
+        if (taskAttempts.website <= 0) {
+          alert('Invalid website name. No attempts remaining. Task cancelled.');
+          closeTaskModal();
+        }
+        return;
+      }
       
       try {
         const result = await callAppScript('verifyTaskWebsite', {
@@ -2278,7 +2343,7 @@
             });
             closeTaskModal();
           } else {
-            alert(`Invalid website name. ${taskAttempts.website} attempt(s) remaining. Make sure you entered the domain name correctly!`);
+            alert(`Invalid website name. ${taskAttempts.website} attempt(s) remaining. Make sure you entered the FINAL domain name correctly!`);
           }
         }
       } catch (error) {
